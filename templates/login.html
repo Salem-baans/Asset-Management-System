@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل الدخول{% endblock %}
+
+{% block content %}
+    <h2 class="text-primary mb-4">تسجيل الدخول</h2>
+    
+    <form method="POST" action="{{ url_for('login') }}">
+        
+        {{ form.hidden_tag() }} 
+
+        <div class="mb-3">
+            <label for="username" class="form-label">{{ form.username.label }}</label>
+            {{ form.username(class="form-control", placeholder="أدخل اسم المستخدم") }}
+        </div>
+        
+        <div class="mb-3">
+            <label for="password" class="form-label">{{ form.password.label }}</label>
+            {{ form.password(class="form-control", placeholder="أدخل كلمة المرور") }}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">دخول</button>
+    </form>
+{% endblock %}

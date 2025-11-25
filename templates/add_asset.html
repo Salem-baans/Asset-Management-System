@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة أصل جديد{% endblock %}
+
+{% block content %}
+    <h2 class="text-primary">إضافة أصل جديد وتعيينه</h2>
+    <p><a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">العودة إلى لوحة التحكم</a></p>
+
+    <form method="POST" action="{{ url_for('add_asset') }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">اسم الأصل (مثال: حاسوب محمول):</label>
+            <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="serial_number" class="form-label">الرقم التسلسلي:</label>
+            <input type="text" id="serial_number" name="serial_number" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="condition" class="form-label">الحالة:</label>
+            <input type="text" id="condition" name="condition" class="form-control" placeholder="مثال: جديد/جيد" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="assigned_to" class="form-label">تعيين الأصل إلى موظف (العُهدة):</label>
+            <select id="assigned_to" name="assigned_to" class="form-select">
+                <option value="">-- غير مُعين لأحد --</option>
+                {% for employee in employees %}
+                    {% if not employee.is_admin %}
+                        <option value="{{ employee.id }}">{{ employee.username }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-success">إضافة الأصل</button>
+    </form>
+{% endblock %}

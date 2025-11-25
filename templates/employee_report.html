@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير {{ employee.username }}{% endblock %}
+
+{% block content %}
+    <h2 class="text-primary">تقرير عهد الموظف: {{ employee.username }}</h2>
+    <p><a href="{{ url_for('reports') }}" class="btn btn-secondary btn-sm">العودة إلى قائمة التقارير</a></p>
+
+    <hr>
+    
+    <h3 class="mt-4">العهد المسجلة حالياً باسم {{ employee.username }}:</h3>
+    {% if current_assets %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>اسم الأصل</th>
+                        <th>الرقم التسلسلي</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in current_assets %}
+                    <tr>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.serial_number }}</td>
+                        <td>{{ asset.condition }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            لا توجد أصول (عهد) مُعينة للموظف حالياً.
+        </div>
+    {% endif %}
+
+    <hr>
+    
+    <h3 class="mt-4">سجل العهد التاريخي للموظف:</h3>
+    {% if asset_history %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-primary">
+                    <tr>
+                        <th>اسم الأصل</th>
+                        <th>تاريخ التسليم</th>
+                        <th>تاريخ الإرجاع</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in asset_history %}
+                    <tr>
+                        <td>{{ log.asset.name }}</td>
+                        <td>{{ log.handover_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if log.return_date %}
+                                {{ log.return_date.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                <span class="badge bg-warning text-dark">لا يزال بعهدته</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-secondary mt-3" role="alert">
+            لا يوجد سجل تاريخي للعُهد لهذا الموظف.
+        </div>
+    {% endif %}
+
+{% endblock %}

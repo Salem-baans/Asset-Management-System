@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم الموظف{% endblock %}
+
+{% block content %}
+    <h2 class="text-primary">مرحباً بك، {{ current_user.username }}</h2>
+    <p class="text-end">
+        <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">تسجيل الخروج</a>
+    </p>
+
+    <h3 class="mt-4">العهد والأصول المسجلة باسمك:</h3>
+    
+    {% if assets %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>اسم الأصل</th>
+                        <th>الرقم التسلسلي</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    <tr>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.serial_number }}</td>
+                        <td>{{ asset.condition }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            لا توجد أصول (عُهد) مسجلة باسمك حالياً.
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل الأصل{% endblock %}
+
+{% block content %}
+    <h2 class="text-primary">تعديل الأصل: {{ asset.name }}</h2>
+    <p><a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">العودة إلى لوحة التحكم</a></p>
+
+    <form method="POST" action="{{ url_for('edit_asset', asset_id=asset.id) }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">اسم الأصل:</label>
+            <input type="text" id="name" name="name" class="form-control" value="{{ asset.name }}" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="serial_number" class="form-label">الرقم التسلسلي:</label>
+            <input type="text" id="serial_number" name="serial_number" class="form-control" value="{{ asset.serial_number }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="condition" class="form-label">الحالة:</label>
+            <input type="text" id="condition" name="condition" class="form-control" value="{{ asset.condition }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="assigned_to" class="form-label">تعيين الأصل إلى موظف (العُهدة):</label>
+            <select id="assigned_to" name="assigned_to" class="form-select">
+                <option value="">-- غير مُعين لأحد --</option>
+                {% for employee in employees %}
+                    {% if not employee.is_admin %}
+                        <option value="{{ employee.id }}" 
+                            {% if asset.assigned_to_id == employee.id %}selected{% endif %}>
+                            {{ employee.username }}
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-success">حفظ التعديلات</button>
+    </form>
+{% endblock %}

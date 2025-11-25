@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء تقارير العهد{% endblock %}
+
+{% block content %}
+    <h2 class="text-primary">إنشاء تقرير عهد الموظفين</h2>
+    <p><a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">العودة إلى لوحة التحكم</a></p>
+
+    <h4 class="mt-4">اختر الموظف لعرض تقرير العهد الخاص به:</h4>
+    
+    {% if employees %}
+        <div class="list-group">
+            {% for employee in employees %}
+                <a href="{{ url_for('employee_report', employee_id=employee.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    {{ employee.username }}
+                    <span class="badge bg-primary rounded-pill">عرض التقرير</span>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            لا يوجد موظفون (غير مدراء) مسجلون في النظام لعرض تقاريرهم.
+        </div>
+    {% endif %}
+    
+{% endblock %}
