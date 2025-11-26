@@ -6,10 +6,11 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, curren
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, HiddenField
 from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
+from sqlalchemy.exc import OperationalError
 
 # --- إعداد التطبيق وقاعدة البيانات ---
 app = Flask(__name__)
-# يستخدم متغير البيئة SECRET_KEY الذي قمت بتعيينه في Render
+# يستخدم متغير البيئة SECRET_KEY
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') 
 
 # *** نستخدم SQLite حالياً لتجاوز مشاكل الطبقة المجانية ***
@@ -91,23 +92,39 @@ def logout():
 @login_required
 def dashboard():
     if current_user.is_admin:
-        employees = User.query.filter_by(is_admin=False).all()
-        assets = Asset.query.all()
-        total_assets = len(assets)
-        available_assets = Asset.query.filter_by(status='Available').count()
-        assigned_assets = Asset.query.filter_by(status='Assigned').count()
-        recent_logs = AssetLog.query.order_by(AssetLog.assignment_date.desc()).limit(10).all()
-        
-        context = {
-            'employees': employees,
-            'assets': assets,
-            'total_assets': total_assets,
-            'available_assets': available_assets,
-            'assigned_assets': assigned_assets,
-            'recent_logs': recent_logs
-        }
-        return render_template('admin_dashboard.html', **context)
+        try:
+            # محاولة جلب البيانات، يتم معالجة الخطأ إذا كانت قاعدة البيانات غير مهيأة بالكامل
+            employees = User.query.filter_by(is_admin=False).all()
+            assets = Asset.query.all()
+            total_assets = len(assets)
+            available_assets = Asset.query.filter_by(status='Available').count()
+            assigned_assets = Asset.query.filter_by(status='Assigned').count()
+            recent_logs = AssetLog.query.order_by(AssetLog.assignment_date.desc()).limit(10).all()
+            
+            context = {
+                'employees': employees,
+                'assets': assets,
+                'total_assets': total_assets,
+                'available_assets': available_assets,
+                'assigned_assets': assigned_assets,
+                'recent_logs': recent_logs
+            }
+            return render_template('admin_dashboard.html', **context)
+        except OperationalError:
+            # إذا فشلت العملية بسبب عدم وجود الجداول (لسبب نادر)
+            print("Database tables might not be fully initialized. Showing zero data.")
+            flash("تم تسجيل الدخول بنجاح، لكن لا يمكن عرض بيانات لوحة القيادة حالياً. يرجى محاولة إضافة بيانات.", 'warning')
+            
+            # العودة إلى عرض لوحة قيادة فارغة لتجنب Internal Server Error
+            return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
+        except Exception as e:
+            # لأي خطأ آخر غير متوقع
+            print(f"Unexpected Error in dashboard route: {e}")
+            flash("حدث خطأ غير متوقع أثناء تحميل لوحة القيادة.", 'danger')
+            return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
+
     else:
+        # للموظف العادي
         current_assets = AssetLog.query.filter_by(user_id=current_user.id, return_date=None).all()
         return render_template('employee_dashboard.html', assets=current_assets)
 
@@ -138,5 +155,3 @@ def initialize_database():
 # Gunicorn سيعين هذا المتغير البيئي في أمر التشغيل (CALL_INIT=1)
 if os.environ.get('CALL_INIT') == '1':
     initialize_database()
-
-# --- لا تضع أي شيء آخر في نهاية الملف ---
