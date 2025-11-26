@@ -14,7 +14,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') 
 
 # *** نستخدم SQLite حالياً لتجاوز مشاكل الطبقة المجانية ***
-# تأكد من أن هذا المسار لا يتغير: 'sqlite:///assets_management.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -118,9 +117,10 @@ def dashboard():
             return render_template('admin_dashboard.html', **context)
             
         except OperationalError:
-            # معالجة الخطأ إذا لم تكن الجداول مهيأة بالكامل (سبب ظهور رسالة التحذير المتكررة)
+            # هذا الجزء هو ما يسبب ظهور رسالة التحذير المتكررة
             print("Database tables might not be fully initialized. Showing zero data.")
             flash("تم تسجيل الدخول بنجاح، لكن لا يمكن عرض بيانات لوحة القيادة حالياً. يرجى محاولة إضافة بيانات.", 'warning')
+            # نمرر بيانات فارغة لتجنب انهيار القالب (وهذا ما يحدث الآن)
             return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
         
         except Exception as e:
@@ -152,11 +152,5 @@ def initialize_database():
         print("Database initialized and admin account created successfully!") 
 
 # ----------------------------------------------------------------------------------
-# --- **استدعاء الدالة عند تشغيل Gunicorn** ---
+# --- **لا يوجد كود تشغيل تلقائي هنا (مثل if __name__ == '__main__': أو CALL_INIT)** ---
 # ----------------------------------------------------------------------------------
-
-# *** التعديل الحاسم: نستخدم متغير بيئة لتشغيل دالة التهيئة مرة واحدة فقط ***
-if os.environ.get('CALL_INIT') == '1':
-    initialize_database()
-
-# *** لا حاجة لـ if __name__ == '__main__': ***
