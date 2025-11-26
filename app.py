@@ -113,9 +113,12 @@ def dashboard():
         return render_template('employee_dashboard.html', assets=current_assets)
 
 
-# --- المنطق الحاسم لإنشاء الجداول وحساب المدير ---
-# هذا الجزء ينفذ فقط عند تشغيل الملف مباشرة كوحدة تنفيذية (python -m app)
-if __name__ == '__main__':
+# ----------------------------------------------------------------------------------
+# --- **دالة تهيئة قاعدة البيانات** ---
+# ----------------------------------------------------------------------------------
+
+def initialize_database():
+    """ينشئ الجداول وحساب المدير لمرة واحدة."""
     with app.app_context():
         # إنشاء الجداول
         db.create_all()
@@ -124,5 +127,14 @@ if __name__ == '__main__':
             admin_user = User(username='admin', password='adminpass', is_admin=True, full_name='مدير النظام')
             db.session.add(admin_user)
             db.session.commit()
-    # إذا كنت تريد تشغيله محلياً، أزل التعليق عن السطر التالي:
-    # app.run(debug=True)
+        print("Database initialized and admin account created successfully!") # للتأكيد في logs
+
+# ----------------------------------------------------------------------------------
+# --- **استدعاء الدالة عند تشغيل Gunicorn** ---
+# ----------------------------------------------------------------------------------
+
+# Gunicorn سيعين هذا المتغير البيئي في أمر التشغيل، مما يضمن التنفيذ لمرة واحدة
+if os.environ.get('CALL_INIT') == '1':
+    initialize_database()
+
+# --- لا تضع أي شيء آخر في نهاية الملف ---
