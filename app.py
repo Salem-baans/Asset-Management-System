@@ -15,13 +15,18 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key')
 
 # *** نستخدم SQLite حالياً لتجاوز مشاكل الطبقة المجانية ***
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets_management.db'
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+
+# 1. التهيئة البطيئة: تهيئة SQLAlchemy دون ربط مباشر بالتطبيق
+db = SQLAlchemy() 
 
 # --- إعداد تسجيل الدخول ---
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+# 2. ربط قاعدة البيانات بالتطبيق يدوياً بعد إعدادات Flask الأساسية
+db.init_app(app) 
+
 login_manager.login_view = 'login'
 
 @login_manager.user_loader
