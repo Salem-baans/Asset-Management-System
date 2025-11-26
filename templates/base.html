@@ -1,3 +1,4 @@
+{% from "includes/_form_errors.html" import render_errors %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -19,16 +20,22 @@
     </style>
 </head>
 <body>
+    
     <div class="container bg-white p-4 rounded shadow-sm">
         
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="row">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                            {# نستخدم فئة الرسالة مباشرة، مع توفير فئة افتراضية (info) في حال كانت category غير موجودة #}
+                            <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
                     </div>
-                {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
         
