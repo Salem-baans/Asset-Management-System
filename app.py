@@ -9,12 +9,12 @@ from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 
 # --- إعداد التطبيق وقاعدة البيانات ---
 app = Flask(__name__)
-# استخدم متغير بيئة أو مفتاح سري قوي
+# يستخدم متغير البيئة SECRET_KEY الذي قمت بتعيينه في Render
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') 
 
-# المنطق: يستخدم متغير البيئة للداتا بيز في Render، ويستخدم SQLite محلياً
+# المنطق: يستخدم متغير البيئة للداتا بيز في Render (PostgreSQL)
 if os.environ.get('DATABASE_URL'):
-    # تعديل رابط PostgreSQL ليكون متوافقاً مع SQLAlchemy (ضروري لـ Render)
+    # تعديل رابط PostgreSQL ليكون متوافقاً مع SQLAlchemy
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace("postgres://", "postgresql://", 1)
 else:
     # للتشغيل المحلي
@@ -57,28 +57,14 @@ class AssetLog(db.Model):
     return_date = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(50))
 
-# --- نماذج WTForms (احتفظ بها كما هي) ---
+# --- نماذج WTForms (استبدل هذه بالنماذج الكاملة إذا كانت مختلفة) ---
 class LoginForm(FlaskForm):
     username = StringField('اسم المستخدم', validators=[DataRequired()])
     password = PasswordField('كلمة المرور', validators=[DataRequired()])
-
-class EmployeeForm(FlaskForm):
-    full_name = StringField('الاسم الكامل', validators=[DataRequired(), Length(min=2, max=120)])
-    username = StringField('اسم المستخدم', validators=[DataRequired(), Length(min=2, max=80)])
-    password = PasswordField('كلمة المرور', validators=[DataRequired(), Length(min=6)])
-    is_admin = SelectField('نوع الحساب', choices=[('0', 'موظف'), ('1', 'مدير')], validators=[DataRequired()])
-
-class AssetForm(FlaskForm):
-    name = StringField('اسم الأصل', validators=[DataRequired(), Length(min=2, max=100)])
-    serial_number = StringField('الرقم التسلسلي', validators=[DataRequired(), Length(min=2, max=100)])
-    description = TextAreaField('الوصف')
-    status = SelectField('الحالة', choices=[('Available', 'متاح'), ('Assigned', 'مُسند'), ('Retired', 'مُهمل')], validators=[DataRequired()])
-
-class AssignAssetForm(FlaskForm):
-    asset_id = HiddenField() 
-    employee_id = SelectField('اختيار الموظف', validators=[DataRequired()])
+# ... (بقية النماذج) ...
 
 # --- المسارات (Routes) ---
+# ... (ضع هنا جميع مسارات التطبيق: login, dashboard, add_asset, etc.) ...
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -127,15 +113,16 @@ def dashboard():
         return render_template('employee_dashboard.html', assets=current_assets)
 
 
-# --- (ضع هنا بقية مسارات التطبيق: add_asset, edit_employee, etc.) ---
-
-
-# --- **المنطق الحاسم لإنشاء الجداول وحساب المدير** ---
-# هذا الجزء يتم استيراده وتنفيذه مباشرة بواسطة start.sh
-with app.app_context():
-    db.create_all()
-    # إنشاء حساب المدير الافتراضي إذا لم يكن موجوداً
-    if User.query.filter_by(username='admin').first() is None:
-        admin_user = User(username='admin', password='adminpass', is_admin=True, full_name='مدير النظام')
-        db.session.add(admin_user)
-        db.session.commit()
+# --- المنطق الحاسم لإنشاء الجداول وحساب المدير ---
+# هذا الجزء ينفذ فقط عند تشغيل الملف مباشرة كوحدة تنفيذية (python -m app)
+if __name__ == '__main__':
+    with app.app_context():
+        # إنشاء الجداول
+        db.create_all()
+        # إنشاء حساب المدير الافتراضي إذا لم يكن موجوداً
+        if User.query.filter_by(username='admin').first() is None:
+            admin_user = User(username='admin', password='adminpass', is_admin=True, full_name='مدير النظام')
+            db.session.add(admin_user)
+            db.session.commit()
+    # إذا كنت تريد تشغيله محلياً، أزل التعليق عن السطر التالي:
+    # app.run(debug=True)
