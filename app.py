@@ -25,7 +25,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # 2. ربط قاعدة البيانات بالتطبيق يدوياً بعد إعدادات Flask الأساسية
-# هذا يحل مشاكل الانهيار عند بدء تشغيل Gunicorn
 db.init_app(app) 
 
 login_manager.login_view = 'login'
@@ -119,7 +118,6 @@ def dashboard():
             return render_template('admin_dashboard.html', **context)
             
         except OperationalError:
-            # إذا فشلت العملية بسبب عدم وجود الجداول
             print("Database tables might not be fully initialized. Showing zero data.")
             flash("تم تسجيل الدخول بنجاح، لكن لا يمكن عرض بيانات لوحة القيادة حالياً. يرجى محاولة إضافة بيانات.", 'warning')
             return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
