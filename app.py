@@ -12,7 +12,7 @@ app = Flask(__name__)
 # استخدم متغير بيئة أو مفتاح سري قوي
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') 
 
-# المنطق الجديد: يستخدم متغير البيئة للداتا بيز في Render، ويستخدم SQLite محلياً
+# المنطق: يستخدم متغير البيئة للداتا بيز في Render، ويستخدم SQLite محلياً
 if os.environ.get('DATABASE_URL'):
     # تعديل رابط PostgreSQL ليكون متوافقاً مع SQLAlchemy (ضروري لـ Render)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace("postgres://", "postgresql://", 1)
@@ -39,7 +39,6 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(120), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     full_name = db.Column(db.String(120))
-    # علاقة: الموظف لديه عدة عهد (مخزنة في AssetLog)
     logs = db.relationship('AssetLog', backref='employee', lazy=True)
 
 class Asset(db.Model):
@@ -47,8 +46,7 @@ class Asset(db.Model):
     name = db.Column(db.String(100), nullable=False)
     serial_number = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
-    status = db.Column(db.String(20), default='Available') # Available, Assigned, Retired
-    # سجل العهد
+    status = db.Column(db.String(20), default='Available')
     logs = db.relationship('AssetLog', backref='asset', lazy=True)
 
 class AssetLog(db.Model):
@@ -57,9 +55,9 @@ class AssetLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     assignment_date = db.Column(db.DateTime, default=datetime.utcnow)
     return_date = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(50)) # Assigned, Returned
+    status = db.Column(db.String(50))
 
-# --- نماذج WTForms ---
+# --- نماذج WTForms (احتفظ بها كما هي) ---
 class LoginForm(FlaskForm):
     username = StringField('اسم المستخدم', validators=[DataRequired()])
     password = PasswordField('كلمة المرور', validators=[DataRequired()])
@@ -77,23 +75,10 @@ class AssetForm(FlaskForm):
     status = SelectField('الحالة', choices=[('Available', 'متاح'), ('Assigned', 'مُسند'), ('Retired', 'مُهمل')], validators=[DataRequired()])
 
 class AssignAssetForm(FlaskForm):
-    asset_id = HiddenField() # يُستخدم لتمرير معرف الأصل
+    asset_id = HiddenField() 
     employee_id = SelectField('اختيار الموظف', validators=[DataRequired()])
 
-# --- إنشاء الجداول وحساب المدير (ضروري للنشر) ---
-with app.app_context():
-    db.create_all()
-    # إنشاء حساب المدير الافتراضي إذا لم يكن موجوداً
-    if User.query.filter_by(username='admin').first() is None:
-        admin_user = User(username='admin', password='adminpass', is_admin=True, full_name='مدير النظام')
-        db.session.add(admin_user)
-        db.session.commit()
-
 # --- المسارات (Routes) ---
-
-# ... (هنا يتم وضع جميع مسارات التطبيق: login, dashboard, assign, return, reports, etc.)
-# نظراً لطول الكود، سأفترض أنك قمت بنسخ جميع المسارات التي عملنا عليها في الخطوات السابقة هنا. 
-# يجب أن تبدأ من @app.route('/login') إلى آخر مسار.
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -102,7 +87,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user and user.password == form.password.data: # تبديل هذا بـ check_password_hash في بيئة الإنتاج
+        if user and user.password == form.password.data:
             login_user(user)
             flash('تم تسجيل الدخول بنجاح.', 'success')
             return redirect(url_for('dashboard'))
@@ -121,16 +106,11 @@ def logout():
 @login_required
 def dashboard():
     if current_user.is_admin:
-        # لوحة تحكم المدير
         employees = User.query.filter_by(is_admin=False).all()
         assets = Asset.query.all()
-        
-        # إحصائيات سريعة
         total_assets = len(assets)
         available_assets = Asset.query.filter_by(status='Available').count()
         assigned_assets = Asset.query.filter_by(status='Assigned').count()
-        
-        # قائمة بأحدث 10 عهد
         recent_logs = AssetLog.query.order_by(AssetLog.assignment_date.desc()).limit(10).all()
         
         context = {
@@ -143,14 +123,19 @@ def dashboard():
         }
         return render_template('admin_dashboard.html', **context)
     else:
-        # لوحة تحكم الموظف
-        # العهد الحالية للموظف
         current_assets = AssetLog.query.filter_by(user_id=current_user.id, return_date=None).all()
         return render_template('employee_dashboard.html', assets=current_assets)
 
 
-# ... (هنا يتم وضع بقية مسارات التطبيق: add_asset, edit_asset, add_employee, etc.)
-# سأفترض أنك ستنسخها من ملفك الحالي.
-# ...
+# --- (ضع هنا بقية مسارات التطبيق: add_asset, edit_employee, etc.) ---
 
-# --- نهاية ملف app.py ---
+
+# --- **المنطق الحاسم لإنشاء الجداول وحساب المدير** ---
+# هذا الجزء يتم استيراده وتنفيذه مباشرة بواسطة start.sh
+with app.app_context():
+    db.create_all()
+    # إنشاء حساب المدير الافتراضي إذا لم يكن موجوداً
+    if User.query.filter_by(username='admin').first() is None:
+        admin_user = User(username='admin', password='adminpass', is_admin=True, full_name='مدير النظام')
+        db.session.add(admin_user)
+        db.session.commit()
