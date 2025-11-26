@@ -12,13 +12,8 @@ app = Flask(__name__)
 # يستخدم متغير البيئة SECRET_KEY الذي قمت بتعيينه في Render
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') 
 
-# المنطق: يستخدم متغير البيئة للداتا بيز في Render (PostgreSQL)
-if os.environ.get('DATABASE_URL'):
-    # تعديل رابط PostgreSQL ليكون متوافقاً مع SQLAlchemy
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace("postgres://", "postgresql://", 1)
-else:
-    # للتشغيل المحلي
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets_management.db'
+# *** نستخدم SQLite حالياً لتجاوز مشاكل الطبقة المجانية ***
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets_management.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -64,7 +59,11 @@ class LoginForm(FlaskForm):
 # ... (بقية النماذج) ...
 
 # --- المسارات (Routes) ---
-# ... (ضع هنا جميع مسارات التطبيق: login, dashboard, add_asset, etc.) ...
+
+@app.route('/healthz', methods=['GET'])
+def health_check():
+    """مسار فحص الصحة المطلوب من Render"""
+    return "ok", 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -113,6 +112,9 @@ def dashboard():
         return render_template('employee_dashboard.html', assets=current_assets)
 
 
+# --- (ضع هنا بقية مسارات التطبيق: add_asset, edit_employee, etc.) ---
+
+
 # ----------------------------------------------------------------------------------
 # --- **دالة تهيئة قاعدة البيانات** ---
 # ----------------------------------------------------------------------------------
@@ -127,13 +129,13 @@ def initialize_database():
             admin_user = User(username='admin', password='adminpass', is_admin=True, full_name='مدير النظام')
             db.session.add(admin_user)
             db.session.commit()
-        print("Database initialized and admin account created successfully!") # للتأكيد في logs
+        print("Database initialized and admin account created successfully!") 
 
 # ----------------------------------------------------------------------------------
 # --- **استدعاء الدالة عند تشغيل Gunicorn** ---
 # ----------------------------------------------------------------------------------
 
-# Gunicorn سيعين هذا المتغير البيئي في أمر التشغيل، مما يضمن التنفيذ لمرة واحدة
+# Gunicorn سيعين هذا المتغير البيئي في أمر التشغيل (CALL_INIT=1)
 if os.environ.get('CALL_INIT') == '1':
     initialize_database()
 
