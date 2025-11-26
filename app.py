@@ -96,46 +96,10 @@ def logout():
 @app.route('/')
 @login_required
 def dashboard():
-    if current_user.is_admin:
-        try:
-            # محاولة جلب البيانات، يتم معالجة الخطأ إذا كانت قاعدة البيانات غير مهيأة بالكامل
-            employees = User.query.filter_by(is_admin=False).all()
-            assets = Asset.query.all()
-            total_assets = len(assets)
-            available_assets = Asset.query.filter_by(status='Available').count()
-            assigned_assets = Asset.query.filter_by(status='Assigned').count()
-            recent_logs = AssetLog.query.order_by(AssetLog.assignment_date.desc()).limit(10).all()
-            
-            context = {
-                'employees': employees,
-                'assets': assets,
-                'total_assets': total_assets,
-                'available_assets': available_assets,
-                'assigned_assets': assigned_assets,
-                'recent_logs': recent_logs
-            }
-            return render_template('admin_dashboard.html', **context)
-        except OperationalError:
-            # إذا فشلت العملية بسبب عدم وجود الجداول (لسبب نادر)
-            print("Database tables might not be fully initialized. Showing zero data.")
-            flash("تم تسجيل الدخول بنجاح، لكن لا يمكن عرض بيانات لوحة القيادة حالياً. يرجى محاولة إضافة بيانات.", 'warning')
-            
-            # العودة إلى عرض لوحة قيادة فارغة لتجنب Internal Server Error
-            return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
-        except Exception as e:
-            # لأي خطأ آخر غير متوقع
-            print(f"Unexpected Error in dashboard route: {e}")
-            flash("حدث خطأ غير متوقع أثناء تحميل لوحة القيادة.", 'danger')
-            return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
-
-    else:
-        # للموظف العادي
-        current_assets = AssetLog.query.filter_by(user_id=current_user.id, return_date=None).all()
-        return render_template('employee_dashboard.html', assets=current_assets)
-
-
-# --- (ضع هنا بقية مسارات التطبيق: add_asset, edit_employee, etc.) ---
-
+    # ************** التعديل الحاسم: عرض قالب بسيط جداً (index.html) **************
+    # الهدف: التأكد من أن الكود يعمل وأن الانهيار ليس في app.py بل في قالب admin_dashboard.html
+    return render_template('index.html') 
+    # **************************************************************************
 
 # ----------------------------------------------------------------------------------
 # --- **دالة تهيئة قاعدة البيانات** ---
