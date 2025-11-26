@@ -25,6 +25,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # 2. ربط قاعدة البيانات بالتطبيق يدوياً بعد إعدادات Flask الأساسية
+# هذا يحل مشاكل الانهيار عند بدء تشغيل Gunicorn
 db.init_app(app) 
 
 login_manager.login_view = 'login'
@@ -96,10 +97,47 @@ def logout():
 @app.route('/')
 @login_required
 def dashboard():
-    # ************** التعديل الحاسم: عرض قالب بسيط جداً (index.html) **************
-    # الهدف: التأكد من أن الكود يعمل وأن الانهيار ليس في app.py بل في قالب admin_dashboard.html
-    return render_template('index.html') 
-    # **************************************************************************
+    if current_user.is_admin:
+        try:
+            # محاولة جلب البيانات وعرض قالب admin_dashboard.html
+            employees = User.query.filter_by(is_admin=False).all()
+            assets = Asset.query.all()
+            total_assets = len(assets)
+            available_assets = Asset.query.filter_by(status='Available').count()
+            assigned_assets = Asset.query.filter_by(status='Assigned').count()
+            recent_logs = AssetLog.query.order_by(AssetLog.assignment_date.desc()).limit(10).all()
+            
+            context = {
+                'employees': employees,
+                'assets': assets,
+                'total_assets': total_assets,
+                'available_assets': available_assets,
+                'assigned_assets': assigned_assets,
+                'recent_logs': recent_logs
+            }
+            # العودة إلى عرض لوحة القيادة الأصلية
+            return render_template('admin_dashboard.html', **context)
+            
+        except OperationalError:
+            # إذا فشلت العملية بسبب عدم وجود الجداول
+            print("Database tables might not be fully initialized. Showing zero data.")
+            flash("تم تسجيل الدخول بنجاح، لكن لا يمكن عرض بيانات لوحة القيادة حالياً. يرجى محاولة إضافة بيانات.", 'warning')
+            return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
+        
+        except Exception as e:
+            # إذا حدث خطأ غير متوقع (مثل خطأ في بناء جملة Jinja2 في admin_dashboard.html)
+            print(f"Unexpected Error in dashboard route: {e}")
+            flash("حدث خطأ غير متوقع أثناء تحميل لوحة القيادة. تحقق من قالب admin_dashboard.html", 'danger')
+            return render_template('admin_dashboard.html', employees=[], assets=[], total_assets=0, available_assets=0, assigned_assets=0, recent_logs=[])
+
+    else:
+        # للموظف العادي
+        current_assets = AssetLog.query.filter_by(user_id=current_user.id, return_date=None).all()
+        return render_template('employee_dashboard.html', assets=current_assets)
+
+
+# --- (ضع هنا بقية مسارات التطبيق: add_asset, edit_employee, etc.) ---
+
 
 # ----------------------------------------------------------------------------------
 # --- **دالة تهيئة قاعدة البيانات** ---
